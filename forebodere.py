@@ -12,7 +12,8 @@ from whoosh.index import create_in
 from whoosh.query import Term
 from whoosh.qparser import QueryParser
 from whoosh import highlight
-
+from datetime import datetime
+from math import floor
 
 COMMANDS = {
     "`!quote`": "Returns a random quote.",
@@ -49,7 +50,7 @@ if not os.path.exists("index"):
 
 index = create_in("index", schema)
 
-largest_id = 0
+init = datetime.now()
 
 
 def configure_logger(verbose: int):
@@ -81,6 +82,12 @@ def add_quote(quote):
         hord.insert(QuoteEntry(id=largest_id, quote=quote))
         writer.update_document(quote=quote, ID=str(largest_id))
     return largest_id
+
+
+def format_time_delta(time_delta):
+    hours, remainder = divmod(time_delta.total_seconds(), 3600)
+    minutes = floor(remainder / 60)
+    return "{0}h{1}m".format(floor(hours), minutes)
 
 
 @client.event
@@ -134,8 +141,12 @@ async def on_message(message):
     elif message.content.strip() == ("!stats"):
         await client.send_message(
             message.channel,
-            "Forebodere is currently watching over: {} quotes.".format(
-                index.doc_count()
+            "Forebodere is currently sheparding {} quotes.".format(index.doc_count()),
+        )
+        await client.send_message(
+            message.channel,
+            "Forebodere has been running for {}.".format(
+                format_time_delta(datetime.now() - init)
             ),
         )
     elif message.content.strip() == ("!slap"):
