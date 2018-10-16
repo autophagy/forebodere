@@ -67,8 +67,9 @@ class Bot(object):
             try:
                 with self.index.writer() as writer:
                     largest_id = self.index.doc_count() + 1
-                    self.hord.insert(QuoteEntry(id=largest_id, quote=message))
-                    writer.update_document(quote=message, ID=str(largest_id))
+                    now = datetime.now()
+                    self.hord.insert(QuoteEntry(id=largest_id, quote=message, submitter=str(author), submitted=now))
+                    writer.update_document(quote=message, ID=str(largest_id), submitter=str(author), submitted=now.strftime("%b %d %Y %H:%M:%S"))
                 buf.add("Added quote (ID : {})".format(largest_id))
             except Exception as e:
                 LOGGER.error("Failed to insert quote.")
@@ -107,6 +108,8 @@ class Bot(object):
                         result["ID"], result.highlights("quote", minscore=0)
                     )
                 )
+                if "submitter" in result.keys() and "submitted" in result.keys():
+                    buf.add("*Submitted by {} on {}*".format(result["submitter"], result["submitted"]))
             else:
                 buf.add("No quote found.")
 

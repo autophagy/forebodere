@@ -4,7 +4,7 @@ import argparse
 import logging
 import os
 
-from whoosh.fields import Schema, ID, TEXT
+from whoosh.fields import Schema, ID, TEXT, STORED
 from whoosh.index import create_in
 
 import wisdomhord
@@ -55,11 +55,28 @@ class Forebodere(object):
     def build_whoosh_index(self, index, hord):
         if not os.path.exists(index):
             os.mkdir(index)
-        index = create_in(index, Schema(quote=TEXT(stored=True), ID=ID(stored=True)))
+        index = create_in(
+            index,
+            Schema(
+                quote=TEXT(stored=True),
+                ID=ID(stored=True),
+                submitter=STORED,
+                submitted=STORED,
+            ),
+        )
         with index.writer() as writer:
             LOGGER.info("Building Whoosh index from hord.")
             for row in hord.get_rows():
-                writer.update_document(quote=row.quote, ID=str(row.id))
+                if row.submitted:
+                    submitted = row.submitted.strftime("%b %d %Y %H:%M:%S")
+                else:
+                    submitted = None
+                writer.update_document(
+                    quote=row.quote,
+                    ID=str(row.id),
+                    submitter=(row.submitter),
+                    submitted=(submitted),
+                )
         LOGGER.info("Index built. {} documents indexed.".format(index.doc_count()))
         return index
 
