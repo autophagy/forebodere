@@ -11,6 +11,9 @@ from whoosh import highlight
 from .models import QuoteEntry
 from forebodere import author as autophagy, license, source, version
 
+import asyncio
+import time
+
 
 class Bot(object):
     def __init__(self, token, index, hord, logger):
@@ -178,7 +181,15 @@ class Bot(object):
         return buf
 
     def run(self):
-        self.client.run(self.token)
+        loop = asyncio.get_event_loop()
+        while True:
+            try:
+                LOGGER.info("Starting Discord bot.")
+                loop.run_until_complete(self.client.start(self.token))
+            except Exception as e:
+                LOGGER.error(e)
+            LOGGER.info("Waiting 10 seconds to restart.")
+            time.sleep(10)
 
 
 class MessageBuffer(object):
