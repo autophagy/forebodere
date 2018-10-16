@@ -59,7 +59,7 @@ class Forebodere(object):
             index,
             Schema(
                 quote=TEXT(stored=True),
-                ID=ID(stored=True),
+                id=ID(stored=True),
                 submitter=STORED,
                 submitted=STORED,
             ),
@@ -73,7 +73,7 @@ class Forebodere(object):
                     submitted = None
                 writer.update_document(
                     quote=row.quote,
-                    ID=str(row.id),
+                    id=str(row.id),
                     submitter=(row.submitter),
                     submitted=(submitted),
                 )

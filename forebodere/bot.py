@@ -69,8 +69,8 @@ class Bot(object):
                     largest_id = self.index.doc_count() + 1
                     now = datetime.now()
                     self.hord.insert(QuoteEntry(id=largest_id, quote=message, submitter=str(author), submitted=now))
-                    writer.update_document(quote=message, ID=str(largest_id), submitter=str(author), submitted=now.strftime("%b %d %Y %H:%M:%S"))
-                buf.add("Added quote (ID : {})".format(largest_id))
+                    writer.update_document(quote=message, id=str(largest_id), submitter=str(author), submitted=now.strftime("%b %d %Y %H:%M:%S"))
+                buf.add("Added quote (id : {})".format(largest_id))
             except Exception as e:
                 LOGGER.error("Failed to insert quote.")
                 LOGGER.error("Quote: {}".format(message))
@@ -85,7 +85,7 @@ class Bot(object):
         """
         Returns a quote. No argument returns a random quote.
         A text argument will search through the quote DB and return a random result.
-        An argument of the form `ID:69` will attempt to get the quote with the ID of `69`.
+        An argument of the form `id:69` will attempt to get the quote with the id of `69`.
         """
         buf = MessageBuffer()
         results = []
@@ -93,7 +93,7 @@ class Bot(object):
         with self.index.searcher() as searcher:
             if message == "":
                 i = randint(0, self.index.doc_count())
-                query = QueryParser("ID", self.index.schema).parse(str(i))
+                query = QueryParser("id", self.index.schema).parse(str(i))
                 results = searcher.search(query)
             else:
                 query = QueryParser("quote", self.index.schema).parse(message)
@@ -105,7 +105,7 @@ class Bot(object):
                 result = choice(results)
                 buf.add(
                     "[{0}] {1}".format(
-                        result["ID"], result.highlights("quote", minscore=0)
+                        result["id"], result.highlights("quote", minscore=0)
                     )
                 )
                 if "submitter" in result.keys() and "submitted" in result.keys():
