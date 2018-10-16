@@ -12,4 +12,4 @@ parse==1.9.0
 toml==0.10.0
 websockets==3.4
 Whoosh==2.7.4
-wisdomhord==0.2.4
+wisdomhord==0.3.0

@@ -60,7 +60,7 @@ class Forebodere(object):
             LOGGER.info("Building Whoosh index from hord.")
             for row in hord.get_rows():
                 writer.update_document(quote=row.quote, ID=str(row.id))
-        LOGGER.info("Index build. {} documents indexed.".format(index.doc_count()))
+        LOGGER.info("Index built. {} documents indexed.".format(index.doc_count()))
         return index
 
     def configure_logger(self, verbose: int):
