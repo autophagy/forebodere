@@ -32,7 +32,7 @@ class Forebodere(object):
             "--token",
             type=str,
             metavar="TOKEN",
-            required=True,
+            default=os.environ.get('DISCORD_TOKEN', None),
             help="Discord bot token.",
         )
         parser.add_argument(

@@ -6,4 +6,4 @@ ADD requirements.txt /app/requirements.txt
 
 WORKDIR /app
 RUN pip install -r requirements.txt
-CMD ["sh", "-c", "python -m forebodere --hord forebodere.hord --token $DISCORD_TOKEN -v"]
+ENTRYPOINT ["python", "-m", "forebodere", "--hord", "forebodere.hord", "-v"]
