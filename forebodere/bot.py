@@ -14,6 +14,8 @@ from forebodere import author as autophagy, license, source, version
 import asyncio
 import time
 
+import signal
+
 
 class Bot(object):
     def __init__(self, token, index, hord, logger):
@@ -34,6 +36,9 @@ class Bot(object):
             "!slap": self.slap,
             "!help": self.help,
         }
+
+        signal.signal(signal.SIGINT, self.handle_signal)
+        signal.signal(signal.SIGTERM, self.handle_signal)
 
         @self.client.event
         async def on_ready():
@@ -199,16 +204,47 @@ class Bot(object):
             )
         return buf
 
+    def handle_signal(self, signum, frame):
+        LOGGER.info("Recieved {} signal".format(signal.Signals(signum).name))
+        raise SystemExit
+
+    def exit(self):
+        self.client.loop.run_until_complete(self.client.logout())
+        for task in asyncio.Task.all_tasks(loop=self.client.loop):
+            if task.done():
+                task.exception()
+                continue
+            task.cancel()
+            try:
+                self.client.loop.run_until_complete(
+                    asyncio.wait_for(task, 5, loop=self.client.loop)
+                )
+                task.exception()
+            except asyncio.InvalidStateError:
+                pass
+            except asyncio.TimeoutError:
+                pass
+            except asyncio.CancelledError:
+                pass
+        self.client.loop.close()
+
     def run(self):
-        loop = asyncio.get_event_loop()
         while True:
             try:
                 LOGGER.info("Starting Discord bot.")
-                loop.run_until_complete(self.client.start(self.token))
+                self.client.loop.run_until_complete(self.client.start(self.token))
+            except (KeyboardInterrupt, SystemExit):
+                LOGGER.info("Exiting...")
+                self.exit()
+                break
             except Exception as e:
                 LOGGER.error(e)
+
             LOGGER.info("Waiting 10 seconds to restart.")
             time.sleep(10)
+            self.client.loop.run_until_complete(self.client.close())
+            self.client = discord.Client(loop=self.client.loop)
+        LOGGER.info("Exited.")
 
 
 class MessageBuffer(object):

@@ -90,8 +90,4 @@ class Forebodere(object):
 
 
 def main():
-    try:
-        Forebodere()
-    except KeyboardInterrupt:
-        print("\nExiting...\n")
-        exit(0)
+    Forebodere()
