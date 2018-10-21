@@ -18,6 +18,10 @@ import signal
 
 
 class Bot(object):
+
+    restart_time = 1
+    restart_limit = 300
+
     def __init__(self, token, index, hord, logger):
         global LOGGER
         LOGGER = logger
@@ -42,6 +46,7 @@ class Bot(object):
 
         @self.client.event
         async def on_ready():
+            self.restart_time = 1
             LOGGER.info(
                 "Connected as {0} ({1})".format(
                     self.client.user.name, self.client.user.id
@@ -57,12 +62,12 @@ class Bot(object):
             if command in self.commands:
                 LOGGER.info(
                     "Recieved {} command from {} ({} : {})".format(
-                        command, message.author, message.server, message.channel
+                        command, message.author, message.guild, message.channel
                     )
                 )
                 func = self.commands.get(command)
                 buf = func(message.content[len(command) + 1 :].strip(), message.author)
-                await self.client.send_message(message.channel, str(buf))
+                await message.channel.send(str(buf))
 
     def add_quote(self, message, author):
         """Adds a quote to the quote database."""
@@ -229,10 +234,11 @@ class Bot(object):
         self.client.loop.close()
 
     def run(self):
+        loop = asyncio.get_event_loop()
         while True:
             try:
                 LOGGER.info("Starting Discord bot.")
-                self.client.loop.run_until_complete(self.client.start(self.token))
+                loop.run_until_complete(self.client.start(self.token))
             except (KeyboardInterrupt, SystemExit):
                 LOGGER.info("Exiting...")
                 self.exit()
@@ -240,10 +246,9 @@ class Bot(object):
             except Exception as e:
                 LOGGER.error(e)
 
-            LOGGER.info("Waiting 10 seconds to restart.")
-            time.sleep(10)
-            self.client.loop.run_until_complete(self.client.close())
-            self.client = discord.Client(loop=self.client.loop)
+            LOGGER.info("Waiting {} seconds to restart.".format(self.restart_time))
+            time.sleep(self.restart_time)
+            self.restart_time = min(self.restart_time * 2, self.restart_limit)
         LOGGER.info("Exited.")
 
 
