@@ -77,7 +77,7 @@ class Forebodere(object):
                     submitter=(row.submitter),
                     submitted=(submitted),
                 )
-        LOGGER.info("Index built. {} documents indexed.".format(index.doc_count()))
+        LOGGER.info(f"Index built. {index.doc_count()} documents indexed.")
         return index
 
     def configure_logger(self, verbose: int):

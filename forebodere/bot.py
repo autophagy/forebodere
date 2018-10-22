@@ -49,11 +49,7 @@ class Bot(object):
         @self.client.event
         async def on_ready():
             self.restart_time = 1
-            LOGGER.info(
-                "Connected as {0} ({1})".format(
-                    self.client.user.name, self.client.user.id
-                )
-            )
+            LOGGER.info(f"Connected as {self.client.user.name} ({self.client.user.id})")
 
         @self.client.event
         async def on_message(message):
@@ -63,12 +59,12 @@ class Bot(object):
             command = message.content.split(" ", 1)[0]
             if command in self.commands:
                 LOGGER.info(
-                    "Recieved {} command from {} ({} : {})".format(
-                        command, message.author, message.guild, message.channel
-                    )
+                    f"Recieved {command} from {message.author} ({message.guild} : {message.channel})"
                 )
-                func = self.commands.get(command)
-                buf = func(message.content[len(command) + 1 :].strip(), message.author)
+                buf = self.commands[command](
+                    message=message.content[len(command) + 1 :].strip(),
+                    author=message.author,
+                )
                 await message.channel.send(str(buf))
 
     def add_quote(self, message, author):
@@ -97,9 +93,9 @@ class Bot(object):
                 buf.add("Added quote (id : {})".format(largest_id))
             except Exception as e:
                 LOGGER.error("Failed to insert quote.")
-                LOGGER.error("Quote: {}".format(message))
-                LOGGER.error("Submitter: {}".format(author))
-                LOGGER.error("Exception: {}".format(str(e)))
+                LOGGER.error(f"Quote: {format.message}")
+                LOGGER.error(f"Submitter: {author}")
+                LOGGER.error(f"Exception: {str(e)}")
                 buf.add("Failed to add quote.")
         else:
             buf.add("No quote to add.")
@@ -127,16 +123,10 @@ class Bot(object):
                 results.formatter = BoldFormatter()
                 results.fragmenter = highlight.WholeFragmenter()
                 result = choice(results)
-                buf.add(
-                    "[{0}] {1}".format(
-                        result["id"], result.highlights("quote", minscore=0)
-                    )
-                )
+                buf.add(f"[{result['id']}] {result.highlights('quote', minscore=0)}")
                 if "submitter" in result.keys() and "submitted" in result.keys():
                     buf.add(
-                        "*Submitted by {} on {}*".format(
-                            result["submitter"], result["submitted"]
-                        )
+                        f"*Submitted by {result['submitter']} on {result['submitted']}*."
                     )
             else:
                 buf.add("No quote found.")
@@ -152,16 +142,16 @@ class Bot(object):
         buf = MessageBuffer()
         buf.add("Bot Status:")
         buf.add("```")
-        buf.add("Quotes     ::   {}".format(self.index.doc_count()))
-        buf.add("Uptime     ::   {0}h{1}m".format(floor(hours), minutes))
-        buf.add("Latency    ::   {}ms".format(round(self.client.latency * 1000, 1)))
-        buf.add("Version    ::   {}".format(version))
+        buf.add(f"Quotes     ::   {self.index.doc_count()}")
+        buf.add(f"Uptime     ::   {floor(hours)}h{minutes}m")
+        buf.add(f"Latency    ::   {round(self.client.latency * 1000, 1)}ms")
+        buf.add(f"Version    ::   {version}")
         buf.add("```")
         buf.add("System Status:")
         buf.add("```")
-        buf.add("Python     ::   {}".format(platform.python_version()))
-        buf.add("Platform   ::   {}".format(platform.platform()))
-        buf.add("Node       ::   {}".format(platform.node()))
+        buf.add(f"Python     ::   {platform.python_version()}")
+        buf.add(f"Platform   ::   {platform.platform()}")
+        buf.add(f"Node       ::   {platform.node()}")
         buf.add("```")
         return buf
 
@@ -173,9 +163,7 @@ class Bot(object):
             target = message
         buf = MessageBuffer()
         buf.add(
-            "*{0} slaps {1} around a bit with a large trout*".format(
-                self.client.user.name, target
-            )
+            f"*{self.client.user.name} slaps {target} around a bit with a large trout*"
         )
         return buf
 
@@ -210,13 +198,11 @@ class Bot(object):
         buf = MessageBuffer()
         buf.add("Forebodere supports:")
         for command in self.commands:
-            buf.add(
-                "• `{0}` - {1}".format(command, trim(self.commands[command].__doc__))
-            )
+            buf.add(f"• `{command}` - {trim(self.commands[command].__doc__)}")
         return buf
 
     def handle_signal(self, signum, frame):
-        LOGGER.info("Recieved {} signal".format(signal.Signals(signum).name))
+        LOGGER.info(f"Recieved {signal.Signals(signum).name} signal")
         raise SystemExit
 
     def exit(self):
@@ -252,7 +238,7 @@ class Bot(object):
             except Exception as e:
                 LOGGER.error(e)
 
-            LOGGER.info("Waiting {} seconds to restart.".format(self.restart_time))
+            LOGGER.info(f"Waiting {self.restart_time} seconds to restart.")
             time.sleep(self.restart_time)
             self.restart_time = min(self.restart_time * 2, self.restart_limit)
         LOGGER.info("Exited.")
@@ -272,4 +258,4 @@ class MessageBuffer(object):
 class BoldFormatter(highlight.Formatter):
     def format_token(self, text, token, replace=False):
         tokentext = highlight.get_text(text, token, replace)
-        return "**%s**" % tokentext
+        return f"**{tokentext}**"
