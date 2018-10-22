@@ -18,6 +18,8 @@ import signal
 
 import platform
 
+import re
+
 
 class Bot(object):
 
@@ -123,7 +125,8 @@ class Bot(object):
                 results.formatter = BoldFormatter()
                 results.fragmenter = highlight.WholeFragmenter()
                 result = choice(results)
-                buf.add(f"[{result['id']}] {result.highlights('quote', minscore=0)}")
+                quote = self.santise_quote(result.highlights('quote', minscore=0))
+                buf.add(f"[{result['id']}] {quote}")
                 if "submitter" in result.keys() and "submitted" in result.keys():
                     buf.add(
                         f"*Submitted by {result['submitter']} on {result['submitted']}*."
@@ -132,6 +135,24 @@ class Bot(object):
                 buf.add("No quote found.")
 
         return buf
+
+    @staticmethod
+    def santise_quote(quote):
+        """
+        Within discord, custom emojis are formatted something similar to:
+        <:customemoji:387878347>
+        If a match on "custom" happens, the match formatter will insert ** into
+        the emoji name, resulting in:
+        <:**custom**emoji:387878347>
+        Which breaks the formatting on the Discord client side.
+        This removes any bolding asterisks from a quote within a custom emoji.
+        """
+
+        r = "<:[\w\d\*]*:[\d\*]*>"
+        for match in re.findall(r, quote):
+            quote = quote.replace(match, match.replace('*', ''))
+        return quote
+
 
     def status(self, message, author):
         """Returns information about the status of the Forebodere bot."""
