@@ -9,12 +9,14 @@ from whoosh.qparser import QueryParser
 from whoosh import highlight
 
 from .models import QuoteEntry
-from forebodere import author as autophagy, license, source, version
+from forebodere import version
 
 import asyncio
 import time
 
 import signal
+
+import platform
 
 
 class Bot(object):
@@ -36,8 +38,8 @@ class Bot(object):
         self.commands = {
             "!quote": self.quote,
             "!addquote": self.add_quote,
-            "!status": self.status,
             "!slap": self.slap,
+            "!status": self.status,
             "!help": self.help,
         }
 
@@ -148,15 +150,19 @@ class Bot(object):
         minutes = floor(remainder / 60)
 
         buf = MessageBuffer()
-        buf.add("Forebodere is serving {} quotes.".format(self.index.doc_count()))
-        buf.add(
-            "Forebodere has been running for {0}h{1}m.".format(floor(hours), minutes)
-        )
-        buf.add(
-            "Forebodere {} was cobbled together by {}. The source ({}) is available at {}".format(
-                version, autophagy, license, source
-            )
-        )
+        buf.add("Bot Status:")
+        buf.add("```")
+        buf.add("Quotes     ::   {}".format(self.index.doc_count()))
+        buf.add("Uptime     ::   {0}h{1}m".format(floor(hours), minutes))
+        buf.add("Latency    ::   {}ms".format(round(self.client.latency * 1000, 1)))
+        buf.add("Version    ::   {}".format(version))
+        buf.add("```")
+        buf.add("System Status:")
+        buf.add("```")
+        buf.add("Python     ::   {}".format(platform.python_version()))
+        buf.add("Platform   ::   {}".format(platform.platform()))
+        buf.add("Node       ::   {}".format(platform.node()))
+        buf.add("```")
         return buf
 
     def slap(self, message, author):
