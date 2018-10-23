@@ -46,7 +46,11 @@ class Forebodere(object):
         args = parser.parse_args()
 
         self.configure_logger(args.verbose)
-        self.hord = wisdomhord.hladan(args.hord, bisen=QuoteEntry)
+        hord_path = os.path.expanduser(args.hord)
+        if not os.path.exists(hord_path):
+            self.hord = wisdomhord.cennan(hord_path, bisen=QuoteEntry)
+        else:
+            self.hord = wisdomhord.hladan(hord_path, bisen=QuoteEntry)
         self.index = self.build_whoosh_index(args.index, self.hord)
 
         bot = Bot(args.token, self.index, self.hord, LOGGER)
