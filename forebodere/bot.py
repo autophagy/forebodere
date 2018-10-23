@@ -201,7 +201,7 @@ class Bot(object):
         buf.add("Bot Status:")
         buf.add_codeblock(
             f"""Quotes     ::   {bot.index.doc_count()}
-                Uptime     ::   {floor(hours)}h{minutes}
+                Uptime     ::   {floor(hours)}h{minutes}m
                 Latency    ::   {round(bot.client.latency * 1000, 1)}ms
                 Version    ::   {version}
             """
