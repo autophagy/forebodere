@@ -1,30 +1,29 @@
 import discord
+import asyncio
+import time
+import signal
+import platform
+import re
 
 from datetime import datetime
 from math import floor
 from random import randint, choice
-import sys
 
 from whoosh.qparser import QueryParser
 from whoosh import highlight
 
 from .models import QuoteEntry
 from forebodere import version
-
-import asyncio
-import time
-
-import signal
-
-import platform
-
-import re
+from .register import FunctionRegister
+from .buffer import MessageBuffer
 
 
 class Bot(object):
 
     restart_time = 1
     restart_limit = 300
+
+    registry = FunctionRegister()
 
     def __init__(self, token, index, hord, logger):
         global LOGGER
@@ -36,14 +35,6 @@ class Bot(object):
         self.token = token
         self.index = index
         self.hord = hord
-
-        self.commands = {
-            "!quote": self.quote,
-            "!addquote": self.add_quote,
-            "!slap": self.slap,
-            "!status": self.status,
-            "!help": self.help,
-        }
 
         signal.signal(signal.SIGINT, self.handle_signal)
         signal.signal(signal.SIGTERM, self.handle_signal)
@@ -59,82 +50,17 @@ class Bot(object):
                 return
 
             command = message.content.split(" ", 1)[0]
-            if command in self.commands:
+            if self.registry.contains(command):
                 LOGGER.info(
                     f"Recieved {command} from {message.author} ({message.guild} : {message.channel})"
                 )
-                buf = self.commands[command](
+                buf = self.registry.call(
+                    command=command,
+                    bot=self,
                     message=message.content[len(command) + 1 :].strip(),
                     author=message.author,
                 )
                 await message.channel.send(str(buf))
-
-    def add_quote(self, message, author):
-        """Adds a quote to the quote database."""
-        buf = MessageBuffer()
-
-        if message != "":
-            try:
-                with self.index.writer() as writer:
-                    largest_id = self.index.doc_count() + 1
-                    now = datetime.now()
-                    self.hord.insert(
-                        QuoteEntry(
-                            id=largest_id,
-                            quote=message,
-                            submitter=str(author),
-                            submitted=now,
-                        )
-                    )
-                    writer.update_document(
-                        quote=message,
-                        id=str(largest_id),
-                        submitter=str(author),
-                        submitted=now.strftime("%b %d %Y %H:%M:%S"),
-                    )
-                buf.add("Added quote (id : {})".format(largest_id))
-            except Exception as e:
-                LOGGER.error("Failed to insert quote.")
-                LOGGER.error(f"Quote: {format.message}")
-                LOGGER.error(f"Submitter: {author}")
-                LOGGER.error(f"Exception: {str(e)}")
-                buf.add("Failed to add quote.")
-        else:
-            buf.add("No quote to add.")
-        return buf
-
-    def quote(self, message, author):
-        """
-        Returns a quote. No argument returns a random quote.
-        A text argument will search through the quote DB and return a random result.
-        An argument of the form `id:69` will attempt to get the quote with the id of `69`.
-        """
-        buf = MessageBuffer()
-        results = []
-
-        with self.index.searcher() as searcher:
-            if message == "":
-                i = randint(0, self.index.doc_count())
-                query = QueryParser("id", self.index.schema).parse(str(i))
-                results = searcher.search(query)
-            else:
-                query = QueryParser("quote", self.index.schema).parse(message)
-                results = searcher.search(query, limit=None)
-
-            if len(results) > 0:
-                results.formatter = BoldFormatter()
-                results.fragmenter = highlight.WholeFragmenter()
-                result = choice(results)
-                quote = self.santise_quote(result.highlights('quote', minscore=0))
-                buf.add(f"[{result['id']}] {quote}")
-                if "submitter" in result.keys() and "submitted" in result.keys():
-                    buf.add(
-                        f"*Submitted by {result['submitter']} on {result['submitted']}*."
-                    )
-            else:
-                buf.add("No quote found.")
-
-        return buf
 
     @staticmethod
     def santise_quote(quote):
@@ -150,77 +76,8 @@ class Bot(object):
 
         r = "<:[\w\d\*]*:[\d\*]*>"
         for match in re.findall(r, quote):
-            quote = quote.replace(match, match.replace('*', ''))
+            quote = quote.replace(match, match.replace("*", ""))
         return quote
-
-
-    def status(self, message, author):
-        """Returns information about the status of the Forebodere bot."""
-        delta = datetime.now() - self.init
-        hours, remainder = divmod(delta.total_seconds(), 3600)
-        minutes = floor(remainder / 60)
-
-        buf = MessageBuffer()
-        buf.add("Bot Status:")
-        buf.add("```")
-        buf.add(f"Quotes     ::   {self.index.doc_count()}")
-        buf.add(f"Uptime     ::   {floor(hours)}h{minutes}m")
-        buf.add(f"Latency    ::   {round(self.client.latency * 1000, 1)}ms")
-        buf.add(f"Version    ::   {version}")
-        buf.add("```")
-        buf.add("System Status:")
-        buf.add("```")
-        buf.add(f"Python     ::   {platform.python_version()}")
-        buf.add(f"Platform   ::   {platform.platform()}")
-        buf.add(f"Node       ::   {platform.node()}")
-        buf.add("```")
-        return buf
-
-    def slap(self, message, author):
-        """🐟"""
-        if message == "":
-            target = author.name
-        else:
-            target = message
-        buf = MessageBuffer()
-        buf.add(
-            f"*{self.client.user.name} slaps {target} around a bit with a large trout*"
-        )
-        return buf
-
-    def help(self, message, author):
-        """Returns information about valid Forebodere commands."""
-
-        def trim(docstring):
-            if not docstring:
-                return ""
-            # Convert tabs to spaces (following the normal Python rules)
-            # and split into a list of lines:
-            lines = docstring.expandtabs().splitlines()
-            # Determine minimum indentation (first line doesn't count):
-            indent = sys.maxsize
-            for line in lines[1:]:
-                stripped = line.lstrip()
-                if stripped:
-                    indent = min(indent, len(line) - len(stripped))
-            # Remove indentation (first line is special):
-            trimmed = [lines[0].strip()]
-            if indent < sys.maxsize:
-                for line in lines[1:]:
-                    trimmed.append(line[indent:].rstrip())
-            # Strip off trailing and leading blank lines:
-            while trimmed and not trimmed[-1]:
-                trimmed.pop()
-            while trimmed and not trimmed[0]:
-                trimmed.pop(0)
-            # Return a single string:
-            return "\n".join(trimmed)
-
-        buf = MessageBuffer()
-        buf.add("Forebodere supports:")
-        for command in self.commands:
-            buf.add(f"• `{command}` - {trim(self.commands[command].__doc__)}")
-        return buf
 
     def handle_signal(self, signum, frame):
         LOGGER.info(f"Recieved {signal.Signals(signum).name} signal")
@@ -264,16 +121,112 @@ class Bot(object):
             self.restart_time = min(self.restart_time * 2, self.restart_limit)
         LOGGER.info("Exited.")
 
+    @registry.register("!addquote")
+    def add_quote(bot, message, author):
+        """Adds a quote to the quote database."""
+        buf = MessageBuffer()
 
-class MessageBuffer(object):
-    def __init__(self):
-        self.messages = []
+        if message != "":
+            try:
+                with bot.index.writer() as writer:
+                    largest_id = bot.index.doc_count() + 1
+                    now = datetime.now()
+                    bot.hord.insert(
+                        QuoteEntry(
+                            id=largest_id,
+                            quote=message,
+                            submitter=str(author),
+                            submitted=now,
+                        )
+                    )
+                    writer.update_document(
+                        quote=message,
+                        id=str(largest_id),
+                        submitter=str(author),
+                        submitted=now.strftime("%b %d %Y %H:%M:%S"),
+                    )
+                buf.add("Added quote (id : {})".format(largest_id))
+            except Exception as e:
+                LOGGER.error("Failed to insert quote.")
+                LOGGER.error(f"Quote: {format.message}")
+                LOGGER.error(f"Submitter: {author}")
+                LOGGER.error(f"Exception: {str(e)}")
+                buf.add("Failed to add quote.")
+        else:
+            buf.add("No quote to add.")
+        return buf
 
-    def add(self, message):
-        self.messages.append(message)
+    @registry.register("!quote")
+    def quote(bot, message, author):
+        """
+        Returns a quote. No argument returns a random quote.
+        A text argument will search through the quote DB and return a random result.
+        An argument of the form `id:69` will attempt to get the quote with the id of `69`.
+        """
+        buf = MessageBuffer()
+        results = []
 
-    def __str__(self):
-        return "\n".join(self.messages)
+        with bot.index.searcher() as searcher:
+            if message == "":
+                i = randint(0, bot.index.doc_count())
+                query = QueryParser("id", bot.index.schema).parse(str(i))
+                results = searcher.search(query)
+            else:
+                query = QueryParser("quote", bot.index.schema).parse(message)
+                results = searcher.search(query, limit=None)
+
+            if len(results) > 0:
+                results.formatter = BoldFormatter()
+                results.fragmenter = highlight.WholeFragmenter()
+                result = choice(results)
+                quote = bot.santise_quote(result.highlights("quote", minscore=0))
+                buf.add(f"[{result['id']}] {quote}")
+                if "submitter" in result.keys() and "submitted" in result.keys():
+                    buf.add(
+                        f"*Submitted by {result['submitter']} on {result['submitted']}*."
+                    )
+            else:
+                buf.add("No quote found.")
+
+        return buf
+
+    @registry.register("!status")
+    def status(bot, message, author):
+        """Returns information about the status of the Forebodere bot."""
+        delta = datetime.now() - bot.init
+        hours, remainder = divmod(delta.total_seconds(), 3600)
+        minutes = floor(remainder / 60)
+
+        buf = MessageBuffer()
+        buf.add("Bot Status:")
+        buf.add_codeblock(
+            f"""Quotes     ::   {bot.index.doc_count()}
+                Uptime     ::   {floor(hours)}h{minutes}
+                Latency    ::   {round(bot.client.latency * 1000, 1)}ms
+                Version    ::   {version}
+            """
+        )
+        buf.add("System Status:")
+        buf.add_codeblock(
+            f"""Python     ::   {platform.python_version()}
+                Platform   ::   {platform.platform()}
+                Node       ::   {platform.node()}
+            """
+        )
+        return buf
+
+    @registry.register("!slap")
+    def slap(bot, message, author):
+        """🐟"""
+        if message == "":
+            target = author.name
+        else:
+            target = message
+        buf = MessageBuffer()
+        buf.add(
+            f"*{bot.client.user.name} slaps {target} around a bit with a large trout*"
+        )
+        return buf
 
 
 class BoldFormatter(highlight.Formatter):
