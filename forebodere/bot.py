@@ -12,6 +12,8 @@ from random import randint, choice
 from whoosh.qparser import QueryParser
 from whoosh import highlight
 
+import markovify
+
 from .models import QuoteEntry
 from forebodere import version
 from .register import FunctionRegister
@@ -146,6 +148,12 @@ class Bot(object):
                         submitter=str(author),
                         submitted=now.strftime("%b %d %Y %H:%M:%S"),
                     )
+                    markov_quote = message
+                    forbidden_characters = "()\"'[]"
+                    for character in forbidden_characters:
+                        markov_quote = markov_quote.replace(character, "")
+                    model = markovify.NewlineText(markov_quote)
+                    bot.model = markovify.combine([bot.model, model])
                 buf.add("Added quote (id : {})".format(largest_id))
             except Exception as e:
                 LOGGER.error("Failed to insert quote.")
