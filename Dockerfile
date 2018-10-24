@@ -7,9 +7,13 @@ RUN pip install --ignore-installed --no-user --prefix /install -r requirements.t
 FROM python:3.6-alpine
 
 RUN mkdir -pv /app
-ADD forebodere /app/forebodere
 WORKDIR /app
+
+COPY setup.py .
+COPY forebodere ./forebodere
 
 COPY --from=python-base /install /usr/local
 
-ENTRYPOINT ["python", "-m", "forebodere", "--hord", "forebodere.hord", "-v"]
+RUN pip install -e .
+
+ENTRYPOINT ["forebodere", "--hord", "forebodere.hord", "-v"]
