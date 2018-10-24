@@ -26,6 +26,7 @@ setup(
         "Whoosh==2.7.4",
         "wisdomhord==0.3.1",
         "discord.py==1.0.0a1590+g860d6a9",
+        "markovify==0.7.1",
     ],
     python_requires=">=3.6",
     classifiers=[

@@ -25,7 +25,7 @@ class Bot(object):
 
     registry = FunctionRegister()
 
-    def __init__(self, token, index, hord, logger):
+    def __init__(self, token, index, model, hord, logger):
         global LOGGER
         LOGGER = logger
 
@@ -35,6 +35,7 @@ class Bot(object):
         self.token = token
         self.index = index
         self.hord = hord
+        self.model = model
 
         signal.signal(signal.SIGINT, self.handle_signal)
         signal.signal(signal.SIGTERM, self.handle_signal)
@@ -188,6 +189,13 @@ class Bot(object):
             else:
                 buf.add("No quote found.")
 
+        return buf
+
+    @registry.register("!markov")
+    def markov(bot, message, author):
+        """Generates a Markov chain from the quote corpus."""
+        buf = MessageBuffer()
+        buf.add(bot.model.make_sentence())
         return buf
 
     @registry.register("!status")

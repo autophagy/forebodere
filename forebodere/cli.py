@@ -12,6 +12,8 @@ import wisdomhord
 from .models import QuoteEntry
 from .bot import Bot
 
+import markovify
+
 global LOGGER
 LOGGER = logging.getLogger("forebodere")
 
@@ -48,15 +50,16 @@ class Forebodere(object):
         self.configure_logger(args.verbose)
         hord_path = os.path.expanduser(args.hord)
         if not os.path.exists(hord_path):
-            self.hord = wisdomhord.cennan(hord_path, bisen=QuoteEntry)
+            hord = wisdomhord.cennan(hord_path, bisen=QuoteEntry)
         else:
-            self.hord = wisdomhord.hladan(hord_path, bisen=QuoteEntry)
-        self.index = self.build_whoosh_index(args.index, self.hord)
+            hord = wisdomhord.hladan(hord_path, bisen=QuoteEntry)
+        index, model = self.build_indexes(args.index, hord)
 
-        bot = Bot(args.token, self.index, self.hord, LOGGER)
+        bot = Bot(args.token, index, model, hord, LOGGER)
         bot.run()
 
-    def build_whoosh_index(self, index, hord):
+    @staticmethod
+    def build_indexes(index, hord):
         if not os.path.exists(index):
             os.mkdir(index)
         index = create_in(
@@ -68,9 +71,11 @@ class Forebodere(object):
                 submitted=STORED,
             ),
         )
+        corpus = ""
         with index.writer() as writer:
-            LOGGER.info("Building Whoosh index from hord.")
+            LOGGER.info("Building Whoosh index and markov model from hord.")
             for row in hord.get_rows():
+                corpus += row.quote + "\n"
                 if row.submitted:
                     submitted = row.submitted.strftime("%b %d %Y %H:%M:%S")
                 else:
@@ -82,7 +87,9 @@ class Forebodere(object):
                     submitted=(submitted),
                 )
         LOGGER.info(f"Index built. {index.doc_count()} documents indexed.")
-        return index
+        model = markovify.NewlineText(corpus)
+        LOGGER.info(f"Markov model built.")
+        return index, model
 
     def configure_logger(self, verbose: int):
         LOGGER.setLevel([logging.WARN, logging.INFO, logging.DEBUG][min(verbose, 2)])
