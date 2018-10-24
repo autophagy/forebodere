@@ -24,6 +24,7 @@ class Bot(object):
 
     restart_time = 1
     restart_limit = 300
+    queries = 0
 
     registry = FunctionRegister()
 
@@ -57,6 +58,7 @@ class Bot(object):
                 LOGGER.info(
                     f"Recieved {command} from {message.author} ({message.guild} : {message.channel})"
                 )
+                self.queries += 1
                 buf = self.registry.call(
                     command=command,
                     bot=self,
@@ -217,6 +219,7 @@ class Bot(object):
         buf.add("Bot Status:")
         buf.add_codeblock(
             f"""Quotes     ::   {bot.index.doc_count()}
+                Queries    ::   {bot.queries}
                 Uptime     ::   {floor(hours)}h{minutes}m
                 Latency    ::   {round(bot.client.latency * 1000, 1)}ms
                 Version    ::   {version}
