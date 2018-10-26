@@ -34,9 +34,15 @@ Instead, you should build the image directly on the machine::
     docker build -t autophagy/forebodere:latest .
 
 You can then run the docker image by setting the ``DISCORD_TOKEN`` environment
-variable and mounting the hord you wish to use as a volume::
+variable ::
 
-    docker run -v -d /path/to/forebodere.hord:/app/forebodere.hord -e DISCORD_TOKEN="TOKEN"
+    docker run -d -e DISCORD_TOKEN="TOKEN" autophagy/forebodere:latest
+
+However, due to the ephemeral nature of containers, the Quote DB will be deleted
+upon container destruction. To create a persistant quote DB, pass in the
+`forebodere.hord`_ as a volume::
+
+    docker run -d -v /path/to/forebodere.hord:/app/forebodere.hord -e DISCORD_TOKEN="TOKEN" autophagy/forebodere:latest
 
 .. image:: http://scieldas.autophagy.io/licenses/MIT.png
    :target: LICENSE
@@ -44,3 +50,4 @@ variable and mounting the hord you wish to use as a volume::
 
 .. _Whoosh: https://whoosh.readthedocs.io/en/latest/intro.html
 .. _Dockerhub: https://hub.docker.com/r/autophagy/forebodere/
+.. _forebodere.hord: forebodere.hord

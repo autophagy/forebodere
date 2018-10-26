@@ -10,6 +10,7 @@ RUN mkdir -pv /app
 WORKDIR /app
 
 COPY setup.py .
+COPY forebodere.hord .
 COPY forebodere ./forebodere
 
 COPY --from=python-base /install /usr/local
