@@ -71,11 +71,11 @@ class Forebodere(object):
                 submitted=STORED,
             ),
         )
-        corpus = ""
+        corpus = []
         with index.writer() as writer:
             LOGGER.info("Building Whoosh index and markov model from hord.")
             for row in hord.get_rows():
-                corpus += row.quote + "\n"
+                corpus.append(row.quote)
                 if row.submitted:
                     submitted = row.submitted.strftime("%b %d %Y %H:%M:%S")
                 else:
@@ -87,7 +87,10 @@ class Forebodere(object):
                     submitted=(submitted),
                 )
         LOGGER.info(f"Index built. {index.doc_count()} documents indexed.")
-        model = markovify.NewlineText(corpus)
+        if len(corpus) > 0:
+            model = markovify.NewlineText("\n".join(corpus))
+        else:
+            model = None
         LOGGER.info(f"Markov model built.")
         return index, model
 

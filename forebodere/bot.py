@@ -155,7 +155,10 @@ class Bot(object):
                     for character in forbidden_characters:
                         markov_quote = markov_quote.replace(character, "")
                     model = markovify.NewlineText(markov_quote)
-                    bot.model = markovify.combine([bot.model, model])
+                    if bot.model:
+                        bot.model = markovify.combine([bot.model, model])
+                    else:
+                        bot.model = model
                 buf.add("Added quote (id : {})".format(largest_id))
             except Exception as e:
                 LOGGER.error("Failed to insert quote.")
@@ -177,9 +180,13 @@ class Bot(object):
         buf = MessageBuffer()
         results = []
 
+        if bot.index.doc_count() == 0:
+            buf.add("No quotes have been added.")
+            return buf
+
         with bot.index.searcher() as searcher:
             if message == "":
-                i = randint(0, bot.index.doc_count())
+                i = randint(1, bot.index.doc_count())
                 query = QueryParser("id", bot.index.schema).parse(str(i))
                 results = searcher.search(query)
             else:
@@ -205,7 +212,16 @@ class Bot(object):
     def markov(bot, message, author):
         """Generates a Markov chain from the quote corpus."""
         buf = MessageBuffer()
-        buf.add(bot.model.make_sentence())
+        try:
+            sentence = bot.model.make_sentence(tries=1000)
+            if sentence:
+                buf.add(sentence)
+            else:
+                buf.add("Insufficient quote corpus to generate Markov chain.")
+        except Exception as e:
+            LOGGER.error("Failed to generate Markov chain.")
+            LOGGER.error(e)
+            buf.add("Failed to generate Markov chain.")
         return buf
 
     @registry.register("!status")
