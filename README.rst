@@ -11,15 +11,12 @@ Running
 Python
 ------
 
-To run the bot directly with python, you should install the requirements in a
-clean virtualenv and run the package, passing the path to hord and the discord bot
-token (which can also be inferred from the ``$DISCORD_TOKEN`` environment variable)::
+To run the bot directly with python, you should install and run the package,
+passing the path to hord and the discord bot token (which can also be inferred
+from the ``$DISCORD_TOKEN`` environment variable)::
 
-    virtualenv .venv -p python3.6
-    source .venv/bin/activate
-
-    pip install -r requirements.txt
-    python -m forebodere --hord '/path/to/forebodere.hord' --token 'DISCORD_TOKEN'
+    pip install forebodere
+    forebodere --hord '/path/to/forebodere.hord' --token 'DISCORD_TOKEN'
 
 Docker
 ------
