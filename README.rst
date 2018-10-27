@@ -1,4 +1,4 @@
-.. image:: seonu/github-header.png
+.. image:: seonu/_static/github-header.png
     :alt: forebodere
     :align: center
 
