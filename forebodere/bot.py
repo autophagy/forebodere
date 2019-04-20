@@ -228,15 +228,18 @@ class Bot(object):
     def status(bot, message, author):
         """Returns information about the status of the Forebodere bot."""
         delta = datetime.now() - bot.init
-        hours, remainder = divmod(delta.total_seconds(), 3600)
+        days, remainder_hours = divmod(delta.total_seconds(), 86400)
+        hours, remainder = divmod(remainder_hours, 3600)
         minutes = floor(remainder / 60)
+
+        days, hours = floor(days), floor(hours)
 
         buf = MessageBuffer()
         buf.add("Bot Status:")
         buf.add_codeblock(
             f"""Quotes     ::   {bot.index.doc_count()}
                 Queries    ::   {bot.queries}
-                Uptime     ::   {floor(hours)}h{minutes}m
+                Uptime     ::   {days}d.{hours}h.{minutes}m
                 Latency    ::   {round(bot.client.latency * 1000, 1)}ms
                 Version    ::   {version}
             """
