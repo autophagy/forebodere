@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 __title__ = "forebodere"
-__version__ = (0, 1, 0)
+__version__ = (0, 1, 1)
 
 author = "Mika Naylor (Autophagy)"
 license = "MIT"
