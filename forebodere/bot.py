@@ -200,6 +200,7 @@ class Bot(object):
                 quote = bot.santise_quote(result.highlights("quote", minscore=0))
                 buf.add(f"[{result['id']}] {quote}")
                 if "submitter" in result.keys() and "submitted" in result.keys():
+                    buf.add("")
                     buf.add(
                         f"*Submitted by {result['submitter']} on {result['submitted']}*."
                     )
