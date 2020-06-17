@@ -41,7 +41,7 @@ upon container destruction. To create a persistant quote DB, pass in the
 
     docker run -d -v /path/to/forebodere.hord:/app/forebodere.hord -e DISCORD_TOKEN="TOKEN" autophagy/forebodere:latest
 
-.. image:: http://scieldas.autophagy.io/licenses/MIT.png
+.. image:: http://scieldas.autophagy.io/misc/licenses/mit.png
    :target: LICENSE
    :alt: MIT License
 
