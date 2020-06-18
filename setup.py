@@ -25,8 +25,9 @@ setup(
     install_requires=[
         "Whoosh==2.7.4",
         "wisdomhord==0.3.1",
-        "discord.py==1.0.0a1590+g860d6a9",
+        "discord.py==1.3.3",
         "markovify==0.7.1",
+        "requests==2.24.0",
     ],
     python_requires=">=3.6",
     classifiers=[

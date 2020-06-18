@@ -4,6 +4,8 @@ import time
 import signal
 import platform
 import re
+import requests
+import io
 
 from datetime import datetime
 from math import floor
@@ -65,7 +67,10 @@ class Bot(object):
                     message=message.content[len(command) + 1 :].strip(),
                     author=message.author,
                 )
-                await message.channel.send(str(buf))
+                if isinstance(buf, discord.File):
+                    await message.channel.send(file=buf)
+                else:
+                    await message.channel.send(str(buf))
 
     @staticmethod
     def santise_quote(quote):
@@ -266,6 +271,21 @@ class Bot(object):
             f"*{bot.client.user.name} slaps {target} around a bit with a large trout*"
         )
         return buf
+
+    @registry.register("!cat")
+    def cat(bot, message, author):
+        """Conjures a cat that does not exist. 🐈"""
+        img = requests.get(
+            "https://thiscatdoesnotexist.com/",
+            headers={"User-Agent": "Forebodere says hello"},
+        )
+        if img.status_code == 200:
+            b = io.BytesIO(img.content)
+            return discord.File(b, filename="cat.jpg")
+        else:
+            buf = MessageBuffer()
+            buf.add("Failed to get a cat.")
+            return buf
 
 
 class BoldFormatter(highlight.Formatter):
