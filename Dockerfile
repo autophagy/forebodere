@@ -1,10 +1,10 @@
-FROM python:3.6-slim as python-base
+FROM python:3.8-slim as python-base
 
-RUN apt-get update && apt-get install -y git
+RUN apt-get update && apt-get install -y gcc
 COPY requirements.txt .
 RUN pip install --ignore-installed --no-user --prefix /install -r requirements.txt
 
-FROM python:3.6-alpine
+FROM python:3.8-alpine
 
 RUN mkdir -pv /app
 WORKDIR /app
