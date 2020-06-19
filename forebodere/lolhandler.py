@@ -20,11 +20,17 @@ class LolHandler(object):
             self.tracker[channel.id] = ChannelTracker(
                 channel=ct.channel, frequency=ct.frequency + 1, last=datetime.now()
             )
+        else:
+            self.tracker[channel.id] = ChannelTracker(
+                channel=ct.channel, frequency=0, last=datetime.now()
+            )
 
     async def tick(self):
         while True:
             for id, tracker in self.tracker.items():
-                if (datetime.now() - tracker.last).seconds >= 5:
+                if (
+                    datetime.now() - tracker.last
+                ).seconds >= 5 and tracker.frequency >= 3:
                     if tracker.frequency == 3:
                         await tracker.channel.send("Multilol!")
                     elif tracker.frequency == 4:
