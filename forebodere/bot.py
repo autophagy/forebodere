@@ -20,6 +20,7 @@ from .models import QuoteEntry
 from forebodere import version
 from .register import FunctionRegister
 from .buffer import MessageBuffer
+from .lolhandler import LolHandler
 
 
 class Bot(object):
@@ -41,6 +42,8 @@ class Bot(object):
         self.index = index
         self.hord = hord
         self.model = model
+
+        self.lolhandler = LolHandler()
 
         signal.signal(signal.SIGINT, self.handle_signal)
         signal.signal(signal.SIGTERM, self.handle_signal)
@@ -71,6 +74,7 @@ class Bot(object):
                     await message.channel.send(file=buf)
                 else:
                     await message.channel.send(str(buf))
+            self.lolhandler.handle(command, message.channel)
 
     @staticmethod
     def santise_quote(quote):
@@ -118,7 +122,10 @@ class Bot(object):
         while True:
             try:
                 LOGGER.info("Starting Discord bot.")
-                loop.run_until_complete(self.client.start(self.token))
+                tasks = asyncio.gather(
+                    self.client.start(self.token), self.lolhandler.tick()
+                )
+                loop.run_until_complete(tasks)
             except (KeyboardInterrupt, SystemExit):
                 LOGGER.info("Exiting...")
                 self.exit()
