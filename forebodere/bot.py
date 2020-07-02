@@ -74,7 +74,9 @@ class Bot(object):
                     await message.channel.send(file=buf)
                 else:
                     await message.channel.send(str(buf))
-            self.lolhandler.handle(command.lower(), message.channel)
+            self.lolhandler.handle(
+                message.content.lower().strip(), message.channel, message.author
+            )
 
     @staticmethod
     def santise_quote(quote):
