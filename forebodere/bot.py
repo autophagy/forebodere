@@ -284,10 +284,16 @@ class Bot(object):
     @registry.register("!cat")
     def cat(bot, message, author):
         """Conjures a cat that does not exist. 🐈"""
-        img = requests.get(
-            "https://thiscatdoesnotexist.com/",
-            headers={"User-Agent": "Forebodere says hello"},
-        )
+        try:
+            img = requests.get(
+                "https://thiscatdoesnotexist.com/",
+                headers={"User-Agent": "Forebodere says hello"},
+                timeout=1
+            )
+        except (requests.exceptions.ConnectTimeout):
+            buf = MessageBuffer()
+            buf.add("Failed to get a cat.")
+            return buf
         if img.status_code == 200:
             b = io.BytesIO(img.content)
             return discord.File(b, filename="cat.jpg")
